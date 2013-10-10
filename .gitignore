@@ -1,1 +1,4 @@
-rotationmatrix_MAS.bak.sav
+*.bak*
+*.o
+*.so
+*.a
