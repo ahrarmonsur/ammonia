@@ -140,9 +140,10 @@ cdef void derivatives(double N1, N2, N3, H11, H12, H13, H21, H22, H23,\
 	a_N1 = -(resid_N / rcm12 - rcm1_sq / rcm12 / rcm12_sq * resid_N) / a_arccos_deriv;
 	a_N2 = rcm1 / rcm12 / rcm12_sq * rcm2 * resid_N / a_arccos_deriv;
 	a_N3 = 0.0
+	a_H11 = (resid_H / rcm12 - rcm1_sq / rcm12 / rcm12_sq * resid_H) / a_arccos_deriv;
+		
 
-
-	print a_N2, a_N1
+	print a_H11
 
 #derivatives(1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 12.0, 2.0)
 derivatives(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 20.0, 50.0)
