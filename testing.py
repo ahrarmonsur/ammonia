@@ -1,4 +1,4 @@
-# import numpy as np
+import numpy as np
 
 
 # def index(R_ind, g1_ind, b1_ind, g2_ind, b2_ind, a_ind):
@@ -47,16 +47,38 @@
 # outp.close()
 
 
+# def read_profile(filename):
+# 	inp = open(filename, 'r')
+# 	lines = inp.readlines()
+# 	cur_body = None
+# 	labels = []
+# 	masses = []
+# 	coords = [[],[]]
+# 	for item in lines:
+# 		line = item.split()
+# 		if item[0] == "#": pass
+# 		elif line == []: pass
+# 		elif line == ["Body1"]:
+# 			cur_body = 0
+# 		elif line == ["Body2"]:
+# 			cur_body = 1
+# 		elif len(line) == 5:
+# 			labels.append(line[0])
+# 			masses.append(line[1])
+# 			coords[cur_body].extend(line[2:])
+# 		else: print "Parsing error. Check format of the profile: %s" %(filename)
+# 	return labels, masses, coords
+
+
 def read_profile(filename):
+	import numpy as np
 	inp = open(filename, 'r')
 	lines = inp.readlines()
+	inp.close()
 	cur_body = None
-	labels = []
-	masses = []
-	coords = [[],[]]
+	bodies_data = [[[],[],[]],[[],[],[]]]
 	for item in lines:
 		line = item.split()
-		print line
 		if item[0] == "#": pass
 		elif line == []: pass
 		elif line == ["Body1"]:
@@ -64,12 +86,12 @@ def read_profile(filename):
 		elif line == ["Body2"]:
 			cur_body = 1
 		elif len(line) == 5:
-			labels.append(line[0])
-			masses.append(line[1])
-			coords[cur_body].extend(line[2:])
+			bodies_data[cur_body][0].append(line[0])
+			bodies_data[cur_body][1].append(line[1])
+			bodies_data[cur_body][2].extend(line[2:])
 		else: print "Parsing error. Check format of the profile: %s" %(filename)
-	return labels, masses, coords
+	return bodies_data
+a =  read_profile("testprofile.txt")
 
-print read_profile("testprofile.txt")
-
-	
+import matplotlib.pyplot as plt
+help(plt.legend)

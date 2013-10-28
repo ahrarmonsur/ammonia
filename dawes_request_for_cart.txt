@@ -1,0 +1,7 @@
+Dear Prof. Dawes,
+Thank you very much for getting in touch with me. I hope your trip was productive and enjoyable. Prof. Roy and I are very appreciative of your interest in collaborating.
+
+Since my last e-mail outlining my interpretation of the data grid, I haven't encountered any further issues with the structure of the grid. In fact, I used the queues from the nested loops to flatten the grid to an array of potential values which I can call from utilizing the intervals of each of the coordinates. This reduced the grid size greatly.
+
+My work so far has been focused on converting the data into a form that is compatible with our programs (primarily MMTK, which uses Cartesian coordinates in the potential function of the simulations). To that end, I have been developing code towards a wrapper for the grid. This has involved, in part, analytically deriving the derivative of each of the internal coordinates with respect to cartesian coordinates, which require some substantial calculations for each configuration. In order to reduce some overhead, having the potential data in terms of cartesian coordinates of the constituents of the dimers would be most convenient. Please let us know if it would be possible to obtain the grid in that form? Thank you veyr much for your time and consideration.
+
