@@ -93,5 +93,13 @@ def read_profile(filename):
 	return bodies_data
 a =  read_profile("testprofile.txt")
 
-import matplotlib.pyplot as plt
-help(plt.legend)
+L1 = range(5)
+L2 = L1
+print L2 == L1
+print L2 is L1
+import random
+random.shuffle(L1)
+print L1, L2
+
+print L2 == L1
+print L2 is L1

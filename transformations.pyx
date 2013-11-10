@@ -89,9 +89,9 @@ cdef void int_cart(double a, double b, double g, double[:] ref_struct, double[:]
 cdef void derivatives(double N1, N2, N3, H11, H12, H13, H21, H22, H23,\
   H31, H32, H33, m_N, m_H) except *:
 	cdef:
-		double t3, resid_N, resid_H
-		double rcm1, rcm2, rcm3, rcm1_sq, rcm2_sq, rcm3_sq
-		double rcm_sq, rcm, rcm12_sq, rcm12
+		double t3, cosb_N_deriv, resid_H
+		double Ncm1, Ncm2, Ncm3, Ncm1_sq, Ncm2_sq, Ncm3_sq
+		double Ncm_sq, Ncm, Ncm12_sq, Ncm12
 
 		double cosb_N1, cosb_N2, cosb_N3
 		double cosb_H11, cosb_H12, cosb_H13
@@ -103,50 +103,143 @@ cdef void derivatives(double N1, N2, N3, H11, H12, H13, H21, H22, H23,\
 		double a_H21,a_H22, a_H23
 		double a_H31,a_H32, a_H33		
 
-	t3 = 1 / (m_N + 3 * m_H);
-	resid_N = -t3 * m_N + 1;
+	t3 = 1 / (m_N + 3 * m_H)
+	cosb_N_deriv = 1.0 - t3 * m_N 
+	cosb_H_deriv = 1.0 - t3 * m_H
+	resid_N = t3 * m_N
 	resid_H = t3 * m_H
-	rcm1 = N1 - t3 * (m_N * N1 + m_H * (H11 + H21 + H31));
-	rcm2 = N2 - t3 * (m_N * N2 + m_H * (H12 + H22 + H32));
-	rcm3 = N3 - t3 * (m_N * N3 + m_H * (H13 + H23 + H33));
-	rcm1_sq = rcm1 * rcm1;
-	rcm2_sq = rcm2 * rcm2;
-	rcm3_sq = rcm3 * rcm3;
-	rcm_sq = rcm1_sq + rcm2_sq + rcm3_sq;
-	rcm = sqrt(rcm_sq);
+	Ncm1 = N1 - t3 * (m_N * N1 + m_H * (H11 + H21 + H31))
+	Ncm2 = N2 - t3 * (m_N * N2 + m_H * (H12 + H22 + H32))
+	Ncm3 = N3 - t3 * (m_N * N3 + m_H * (H13 + H23 + H33))
 
-	rcm12_sq = rcm1_sq + rcm2_sq;
-	rcm12 = sqrt(rcm12_sq);
-	a_arccos_deriv = (sqrt(1 - rcm1_sq / rcm12_sq));
+	H1cm1 = H11 - t3 * (m_N * N1 + m_H * (H11 + H21 + H31))
+	H1cm2 = H12 - t3 * (m_N * N2 + m_H * (H12 + H22 + H32))
+	H1cm3 = H13 - t3 * (m_N * N3 + m_H * (H13 + H23 + H33))
+
+	Ncm1_sq = Ncm1 * Ncm1
+	Ncm2_sq = Ncm2 * Ncm2
+	Ncm3_sq = Ncm3 * Ncm3
+	Ncm_sq = Ncm1_sq + Ncm2_sq + Ncm3_sq
+	Ncm = sqrt(Ncm_sq)
+
+	Ncm12_sq = Ncm1_sq + Ncm2_sq
+	Ncm12 = sqrt(Ncm12_sq)
+	a_arccos_deriv = (sqrt(1 - Ncm1_sq / Ncm12_sq))
 
 
 
 
 	## NOTE: Hi1, Hi2, Hi3 are each the same for all i's
 	## Should we use one result 3 times each for efficiency?
-	cosb_N1 = -rcm3 / rcm / rcm_sq * rcm1 * resid_N;
-	cosb_N2 = -rcm3 / rcm / rcm_sq * rcm2 * resid_N;
-	cosb_N3 = resid_N / rcm - rcm3_sq / rcm / rcm_sq * resid_N;
-	cosb_H11 = rcm3 / rcm / rcm_sq * rcm1 * resid_H;
-	cosb_H12 = rcm3 / rcm / rcm_sq * rcm2 * resid_H;
-	cosb_H13 = -resid_H / rcm + rcm3_sq / rcm / rcm_sq * resid_H;
-	cosb_H21 =  rcm3 / rcm / rcm_sq * rcm1 * resid_H;
-	cosb_H22 = rcm3 / rcm / rcm_sq * rcm2 * resid_H;
-	cosb_H23 = -resid_H / rcm  + rcm3_sq / rcm / rcm_sq * resid_H;
-	cosb_H31 = rcm3 / rcm / rcm_sq * rcm1 * resid_H;
-	cosb_H32 = rcm3 / rcm / rcm_sq * rcm2 * resid_H;
-	cosb_H33 = -resid_H / rcm + rcm3_sq / rcm / rcm_sq * resid_H;
+	cosb_N1 = -Ncm3 / Ncm / Ncm_sq * Ncm1 * cosb_N_deriv
+	cosb_N2 = -Ncm3 / Ncm / Ncm_sq * Ncm2 * cosb_N_deriv
+	cosb_N3 = cosb_N_deriv / Ncm - Ncm3_sq / Ncm / Ncm_sq * cosb_N_deriv
+	cosb_H11 = Ncm3 / Ncm / Ncm_sq * Ncm1 * resid_H
+	cosb_H12 = Ncm3 / Ncm / Ncm_sq * Ncm2 * resid_H
+	cosb_H13 = -resid_H / Ncm + Ncm3_sq / Ncm / Ncm_sq * resid_H
+	cosb_H21 =  Ncm3 / Ncm / Ncm_sq * Ncm1 * resid_H
+	cosb_H22 = Ncm3 / Ncm / Ncm_sq * Ncm2 * resid_H
+	cosb_H23 = -resid_H / Ncm  + Ncm3_sq / Ncm / Ncm_sq * resid_H
+	cosb_H31 = Ncm3 / Ncm / Ncm_sq * Ncm1 * resid_H
+	cosb_H32 = Ncm3 / Ncm / Ncm_sq * Ncm2 * resid_H
+	cosb_H33 = -resid_H / Ncm + Ncm3_sq / Ncm / Ncm_sq * resid_H
 
-	a_N1 = -(resid_N / rcm12 - rcm1_sq / rcm12 / rcm12_sq * resid_N) / a_arccos_deriv;
-	a_N2 = rcm1 / rcm12 / rcm12_sq * rcm2 * resid_N / a_arccos_deriv;
+	a_N1 = -(cosb_N_deriv / Ncm12 - Ncm1_sq / Ncm12 / Ncm12_sq * cosb_N_deriv) / a_arccos_deriv
+	a_N2 = Ncm1 / Ncm12 / Ncm12_sq * Ncm2 * cosb_N_deriv / a_arccos_deriv
 	a_N3 = 0.0
-	a_H11 = (resid_H / rcm12 - rcm1_sq / rcm12 / rcm12_sq * resid_H) / a_arccos_deriv;
-		
+	a_H11 = (resid_H / Ncm12 - Ncm1_sq / Ncm12 / Ncm12_sq * resid_H) / a_arccos_deriv
+	a_H12 = -Ncm1 / Ncm12 / Ncm12_sq * Ncm2 * resid_H / a_arccos_deriv
+	a_H13 = 0.0
+	a_H21 = (resid_H / Ncm12 - Ncm1_sq / Ncm12 / Ncm12_sq * resid_H) / a_arccos_deriv
+	a_H22 = -Ncm1 / Ncm12 / Ncm12_sq * Ncm2 * resid_H / a_arccos_deriv
+	a_H23 = 0.0
+	a_H31 = (resid_H / Ncm12 - Ncm1_sq / Ncm12 / Ncm12_sq * resid_H) / a_arccos_deriv
+	a_H32 = -Ncm1 / Ncm12 / Ncm12_sq * Ncm2 * resid_H / a_arccos_deriv
+	a_H33 = 0.0
 
-	print a_H11
+	g_c1 = H1cm2 * resid_H - Ncm2 * resid_H
+	g_c2 = Ncm1 * resid_H - H1cm1 * resid_H
+	g_c3 = Ncm2 * H1cm3 - Ncm3 * H1cm2
+	g_c4 = Ncm3 * H1cm1 - Ncm1 * H1cm3
+	g_c5 = Ncm1 * H1cm2 - Ncm2 * H1cm1
+	g_c6 = g_c4 * Ncm1 / Ncm12 - g_c3 * a_arccos_deriv
+	g_c3_sq = g_c3 * g_c3
+	g_c4_sq = g_c4 * g_c4
+	g_c5_sq = g_c5 * g_c5
+	g_c6_sq = g_c6 * g_c6
+	g_c345_sq = g_c3_sq + g_c4_sq + g_c5_sq
+	g_c345 = sqrt(g_c345_sq)
+	g_c7 = sqrt(1.0 - g_c6_sq / g_c345_sq)
+	g_c8 = Ncm1 * resid_N + H1cm1 * cosb_N_deriv
+	g_c9 = Ncm2 * resid_N + H1cm2 * cosb_N_deriv
+	g_c10 = Ncm3 * resid_N + H1cm3 * cosb_N_deriv
+	g_c11 = H1cm1 * resid_H + Ncm1 * cosb_H_deriv
+	g_c12 = H1cm2 * resid_H + Ncm2 * cosb_H_deriv
+	g_c13 = H1cm3 * resid_H + Ncm3 * cosb_H_deriv
+	g_c14 = H1cm3 * resid_H - Ncm3 * resid_H
+
+
+	g_N1 = -((g_c3 / a_arccos_deriv * (Ncm1_sq * Ncm1  * cosb_N_deriv / (Ncm12_sq * Ncm12_sq) - Ncm1 * cosb_N_deriv / Ncm12_sq)\
+		- g_c10 * Ncm1 / Ncm12 + g_c4 * cosb_N_deriv / Ncm12  - g_c4 * Ncm1_sq * cosb_N_deriv / Ncm12 / Ncm12_sq) / g_c345\
+		- g_c6 * (-g_c4 * g_c10 + g_c5 * g_c9) / g_c345 / g_c345_sq) / g_c7
+	
+	g_N2 = -((-g_c10 * a_arccos_deriv\
+			- g_c3 * Ncm1_sq * Ncm2 * cosb_N_deriv / a_arccos_deriv / (Ncm12_sq * Ncm12_sq)\
+			- g_c4 * Ncm1 * Ncm2 * cosb_N_deriv / Ncm12 / Ncm12_sq) / g_c345\
+		- g_c6 * (g_c3 * g_c10 - g_c5 * g_c8) / g_c345 / g_c345_sq) / g_c7
+
+	g_N3 = -((g_c8 * Ncm1 / Ncm12 + g_c9 * a_arccos_deriv) / g_c345 - g_c6 * (g_c4 * g_c8 - g_c3 * g_c9) / g_c345 / g_c345_sq) / g_c7
+
+	g_H11 = -((-g_c3 * (Ncm1 * resid_H / Ncm12_sq - Ncm1_sq * Ncm1 * resid_H / (Ncm12_sq * Ncm12_sq)) / a_arccos_deriv\
+		+ g_c13 * Ncm1 / Ncm12\
+		- g_c4 * resid_H / Ncm12\
+		+ g_c4 * Ncm1_sq * resid_H / Ncm12 / Ncm12_sq) / g_c345\
+	- g_c6 * (g_c4 * g_c13 - g_c5 * g_c12) / g_c345 / g_c345_sq) / g_c7
+ 
+	g_H12 = -((g_c13 * a_arccos_deriv\
+		+ g_c3 * Ncm1_sq * Ncm2 * resid_H / a_arccos_deriv / (Ncm12_sq * Ncm12_sq)\
+		+ g_c4 * Ncm1 * Ncm2 * resid_H / Ncm12_sq / Ncm12) / g_c345\
+	- g_c6 * (g_c5 * g_c11 - g_c3 * g_c13) / g_c345 / g_c345_sq) / g_c7
+
+	g_H13 = -((-g_c11 * Ncm1 / Ncm12 - g_c12 * a_arccos_deriv) / g_c345\
+		- g_c6 * (g_c3 * g_c12 - g_c4 * g_c11) / g_c345 / g_c345_sq) / g_c7
+
+	g_H21 = -((-g_c3 * (Ncm1 * resid_H / Ncm12_sq - Ncm1_sq * Ncm1 * resid_H / (Ncm12_sq * Ncm12_sq)) / a_arccos_deriv\
+		+ g_c14 * Ncm1 / Ncm12\
+		- g_c4 * resid_H / Ncm12\
+		+ g_c4 * Ncm1_sq * resid_H / Ncm12 / Ncm12_sq) / g_c345\
+	- g_c6 * (g_c4 * g_c14 - g_c5 * g_c1) / g_c345 / g_c345_sq) / g_c7
+
+	g_H22 = -((g_c14 * a_arccos_deriv\
+		+ g_c3 * Ncm1_sq * Ncm2 * resid_H / a_arccos_deriv / (Ncm12_sq * Ncm12_sq)\
+		+ g_c4 * Ncm1 * Ncm2 * resid_H / Ncm12_sq / Ncm12) / g_c345\
+	- g_c6 * (-g_c5 * g_c2 - g_c3 * g_c14) / g_c345 / g_c345_sq) / g_c7
+
+	g_H23 = -((g_c2 * Ncm1 / Ncm12 - g_c1 * a_arccos_deriv) / g_c345\
+		- g_c6 / g_c345 / g_c345_sq * (g_c3 * g_c1 + g_c4 * g_c2)) / g_c7\
+
+	g_H31 = -((-g_c3 * (Ncm1 * resid_H / Ncm12_sq - Ncm1_sq * Ncm1 * resid_H / (Ncm12_sq * Ncm12_sq)) / a_arccos_deriv\
+		+ g_c14 * Ncm1 / Ncm12\
+		- g_c4 * resid_H / Ncm12\
+		+ g_c4 * Ncm1_sq * resid_H / Ncm12 / Ncm12_sq) / g_c345\
+	- g_c6 * (g_c4 * g_c14 - g_c5 * g_c1) / g_c345 / g_c345_sq) / g_c7
+
+
+	g_H32 = -((g_c14 * a_arccos_deriv\
+		+ g_c3 * Ncm1_sq * Ncm2 * resid_H / a_arccos_deriv / (Ncm12_sq * Ncm12_sq)\
+		+ g_c4 * Ncm1 * Ncm2 * resid_H / Ncm12_sq / Ncm12) / g_c345\
+	- g_c6 * (-g_c5 * g_c2 - g_c3 * g_c14) / g_c345 / g_c345_sq) / g_c7
+
+	g_H33 = -((g_c2 * Ncm1 / Ncm12 - g_c1 * a_arccos_deriv) / g_c345\
+		- g_c6 / g_c345 / g_c345_sq * (g_c3 * g_c1 + g_c4 * g_c2)) / g_c7
+
+
+
+	print g_H32
+
 
 #derivatives(1.0, 1.0, 1.0, 2.0, 2.0, 2.0, 3.0, 3.0, 3.0, 4.0, 4.0, 4.0, 12.0, 2.0)
-derivatives(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 20.0, 50.0)
+derivatives(10.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 20.0, 50.0)
 ###########Test for rotmat###########
 #cdef double rotation[3][3]
 
