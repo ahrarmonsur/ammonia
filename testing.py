@@ -1,4 +1,5 @@
 import numpy as np
+from math import acos
 
 
 # def index(R_ind, g1_ind, b1_ind, g2_ind, b2_ind, a_ind):
@@ -47,28 +48,6 @@ import numpy as np
 # outp.close()
 
 
-# def read_profile(filename):
-# 	inp = open(filename, 'r')
-# 	lines = inp.readlines()
-# 	cur_body = None
-# 	labels = []
-# 	masses = []
-# 	coords = [[],[]]
-# 	for item in lines:
-# 		line = item.split()
-# 		if item[0] == "#": pass
-# 		elif line == []: pass
-# 		elif line == ["Body1"]:
-# 			cur_body = 0
-# 		elif line == ["Body2"]:
-# 			cur_body = 1
-# 		elif len(line) == 5:
-# 			labels.append(line[0])
-# 			masses.append(line[1])
-# 			coords[cur_body].extend(line[2:])
-# 		else: print "Parsing error. Check format of the profile: %s" %(filename)
-# 	return labels, masses, coords
-
 
 def read_profile(filename):
 	import numpy as np
@@ -91,15 +70,6 @@ def read_profile(filename):
 			bodies_data[cur_body][2].extend(line[2:])
 		else: print "Parsing error. Check format of the profile: %s" %(filename)
 	return bodies_data
-a =  read_profile("testprofile.txt")
-
-L1 = range(5)
-L2 = L1
-print L2 == L1
-print L2 is L1
-import random
-random.shuffle(L1)
-print L1, L2
-
-print L2 == L1
-print L2 is L1
+# a =  read_profile("testprofile.txt")
+a = [2.975775512437419, 2.760973722923101,2.544904892772507,2.328551948050836,2.112094061064653,1.895589066813102,1.679062660668311,1.462529992921481,1.246003586776676,1.029498592525137,0.813040705538943,0.596687760817272,0.380618930666676,0.165817141152369]
+for i in range(len(a)-1): print float(a[i+1]) - float(a[i])
