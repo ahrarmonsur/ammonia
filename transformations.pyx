@@ -1,5 +1,6 @@
 from libc.math cimport sin, cos, M_PI, sqrt, acos
 import numpy as np
+cimport numpy as np
 #######################Reference Structures###########################
 #cdef double N_crd[3], H1_crd[3], H2_crd[3], H3_crd[3] 
 # N_crd[:] = [0.000000000000000, 0.000000000000000, 0.066352583]
@@ -45,16 +46,6 @@ import numpy as np
 # [N1, N2, N3, H11, H12, H13, H21, H22, H23, H31, H32, H33, n1, n2, n3, h11, h12, h13, h21, h22, h23, h31, h32, h33]
 
 
-def index(R_ind, g1_ind, b1_ind, g2_ind, b2_ind, a_ind):
-	r = 41
-	g1 = 10
-	b1 = 14
-	g2 = 10
-	b2 = 14
-	a = 16
-	ind = R_ind*(g1*b1*g2*b2*a) + g1_ind*(b1*g2*b2*a) + b1_ind*(g2*b2*a) + g2_ind*(b2*a) + b2_ind*(a) + a_ind
-	return ind
-# print index(0, 8, 8, 6, 1, 10)
 
 # Takes a profile filename and returns a list of 2 body data containing
 # labels, masses, and flattened coordinates lists
@@ -135,6 +126,7 @@ cdef void int_cart(double a, double b, double g, double[:] ref_struct, double[:]
 
 cdef void derivatives(double N1, N2, N3, H11, H12, H13, H21, H22, H23,\
   H31, H32, H33, m_N, m_H) except *:
+	"Needs argument namespace replaced with memoryview"
 	cdef:
 		double t3, cosb_N_deriv, cosb_H_deriv, resid_N, resid_H
 		double Ncm1, Ncm2, Ncm3, Ncm1_sq, Ncm2_sq, Ncm3_sq
@@ -281,8 +273,6 @@ cdef void derivatives(double N1, N2, N3, H11, H12, H13, H21, H22, H23,\
 
 	g_H33 = -((g_c2 * Ncm1 / Ncm12 - g_c1 * a_arccos_deriv) / g_c345\
 		- g_c6 / g_c345 / g_c345_sq * (g_c3 * g_c1 + g_c4 * g_c2)) / g_c7
-
-	print g_H32
 	return
 
 
@@ -329,15 +319,15 @@ derivatives(10.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 20.0
 # 	ints[1] = Ncm3 / Ncm
 # 	ints[2] = acos((-g_c3 * a_arccos_deriv + g_c4 * Ncm1 / Ncm12) / g_c345)
 
-cdef void cart_int(double[:] carts, double [:] ints, double m_N, m_H) except *:
-	t3 = 1 / (m_N + 3 * m_H)
-	cosb_N_deriv = 1.0 - t3 * m_N 
-	cosb_H_deriv = 1.0 - t3 * m_H
-	resid_N = t3 * m_N
-	resid_H = t3 * m_H
-	Ncm1 = carts[0] - t3 * (m_N * carts[0] + m_H * (carts[3] + carts[6] + carts[9]))
-	Ncm2 = carts[1] - t3 * (m_N * carts[1] + m_H * (carts[4] + carts[7] + carts[10]))
-	Ncm3 = carts[2] - t3 * (m_N * carts[2] + m_H * (carts[5] + carts[8] + carts[11]))
+cdef void cart_int(double[:] masses, double[:] carts, double [:] ints) except *:
+	t3 = 1 / (masses[0] + 3 * masses[1])
+	cosb_N_deriv = 1.0 - t3 * masses[0] 
+	cosb_H_deriv = 1.0 - t3 * masses[1]
+	resid_N = t3 * masses[0]
+	resid_H = t3 * masses[1]
+	Ncm1 = carts[0] - t3 * (masses[0] * carts[0] + masses[1] * (carts[3] + carts[6] + carts[9]))
+	Ncm2 = carts[1] - t3 * (masses[0] * carts[1] + masses[1] * (carts[4] + carts[7] + carts[10]))
+	Ncm3 = carts[2] - t3 * (masses[0] * carts[2] + masses[1] * (carts[5] + carts[8] + carts[11]))
 
 	Ncm1_sq = Ncm1 * Ncm1
 	Ncm2_sq = Ncm2 * Ncm2
@@ -348,9 +338,9 @@ cdef void cart_int(double[:] carts, double [:] ints, double m_N, m_H) except *:
 	Ncm12_sq = Ncm1_sq + Ncm2_sq
 	Ncm12 = sqrt(Ncm12_sq)
 
-	H1cm1 = carts[3] - t3 * (m_N * carts[0] + m_H * (carts[3] + carts[6] + carts[9]))
-	H1cm2 = carts[4] - t3 * (m_N * carts[1] + m_H * (carts[4] + carts[7] + carts[10]))
-	H1cm3 = carts[5] - t3 * (m_N * carts[2] + m_H * (carts[5] + carts[8] + carts[11]))
+	H1cm1 = carts[3] - t3 * (masses[0] * carts[0] + masses[1] * (carts[3] + carts[6] + carts[9]))
+	H1cm2 = carts[4] - t3 * (masses[0] * carts[1] + masses[1] * (carts[4] + carts[7] + carts[10]))
+	H1cm3 = carts[5] - t3 * (masses[0] * carts[2] + masses[1] * (carts[5] + carts[8] + carts[11]))
 
 	g_c3 = Ncm2 * H1cm3 - Ncm3 * H1cm2
 	g_c4 = Ncm3 * H1cm1 - Ncm1 * H1cm3
@@ -362,38 +352,160 @@ cdef void cart_int(double[:] carts, double [:] ints, double m_N, m_H) except *:
 	g_c345 = sqrt(g_c345_sq)
 	a_arccos_deriv = (sqrt(1 - Ncm1_sq / Ncm12_sq))
 
+	# Order: alpha, beta, gamma
 	ints[0] = acos(Ncm1 / Ncm12)
 	ints[1] = Ncm3 / Ncm
-	ints[2] = acos((-g_c3 * a_arccos_deriv + g_c4 * Ncm1 / Ncm12) / g_c345)
+	g_rel_ang = acos((-g_c3 * a_arccos_deriv + g_c4 * Ncm1 / Ncm12) / g_c345)
+	sign_checker = Ncm12_sq / Ncm12 * g_c5 + a_arccos_deriv * g_c5 * Ncm2\
+	+ (-a_arccos_deriv * g_c4 - Ncm1 / Ncm12 * g_c3) * Ncm3
+
+	if sign_checker < 0.0:
+		ints[2] = -g_rel_ang
+	else: ints[2] = g_rel_ang
+
 	return
 
-cdef double interpolator(double[:] carts, double m_N, m_H) except *:
-	cdef double ints[3]
-	cdef double [:] ints_vw = ints
 
+cdef double length(double[:] pos_1, double[:] pos_2) except * :
+	if not (pos_1.shape[0] == pos_2.shape[0]):
+		raise ValueError("Coordinate arrays must have length of exactly 3")
+	cdef double length
+	length = sqrt(pow(pos_1[0] - pos_2[0],2) + pow(pos_1[1] - pos_2[1],2) + pow(pos_1[2] - pos_2[2],2))
+	return length
+
+cdef int r_index(double r) except * :
+	"""Consumes [radial distance (double)] and returns the index of the closest (rounded) r index in potential grid"""
+	cdef int ind
+	cdef double r_intvl = 0.1
+	if r >= 6.55 or r < 2.45:
+		raise ValueError("Radial distance r = %g is outside interpolable bounds of the potential grid: 2.5 <= r <= 6.5"%r)
+	ind = int(round((r - 2.5) / r_intvl))
+	return ind
+
+cdef int a_index(double a) except * :
+	"""Consumes [alpha rotation (double)] and returns the index of the closest (rounded) a index in potential grid"""
+	cdef int ind
+	cdef double a_intvl = 0.209439510239320
+	ind = int(round(a / a_intvl))
+	return ind
+
+cdef int cosb_index(double cosb) except * :
+	"""Consumes [cos(beta) (double)] and returns the index of the closest (rounded) cosb index in potential grid"""
+	cdef int ind
+	cdef int i
+	cdef double curr
+	cdef np.ndarray[np.double_t, ndim=1] values
+	values = np.array([-0.986283808696811,
+		-0.928434883663568,
+		-0.827201315069758,
+		-0.687292904811677,
+		-0.515248636358151,
+		-0.319112368927877,
+		-0.108054948707343,
+		0.108054948707345,
+		0.319112368927891,
+		0.515248636358154,
+		0.687292904811687,
+		0.827201315069766,
+		0.928434883663574,
+		0.986283808696812], dtype = np.double)
+	curr = values[0]
+	for i in range(len(values)):
+		if abs(cosb - values[i]) < abs(cosb - curr):
+			curr = values[i]
+			ind = i
+	return ind
+
+
+cdef int g_index(double g) except * :
+	"""Consumes [gamma rotation (double)] and returns the index of the closest (rounded) g index in potential grid"""
+	cdef int ind
+	cdef double g_intvl = 0.628318530717960
+	ind = int(round(g / g_intvl))
+	return ind
+
+def pot_index(int R_ind, int g1_ind, int cosb1_ind, int g2_ind, int cosb2_ind, int a_ind):
+	# General Indexing scheme: Multiplications are replaced with results to optimize runtime
+	# r = 41
+	# g1 = 10
+	# cosb1 = 14
+	# g2 = 10
+	# cosb2 = 14
+	# a = 16
+	# ind = R_ind*(g1*cosb1*g2*cosb2*a) + g1_ind*(cosb1*g2*cosb2*a) + cosb1_ind*(g2*cosb2*a) + g2_ind*(cosb2*a) + cosb2_ind*(a) + a_ind
+	cdef int ind
+	ind = R_ind*313600 + g1_ind*31360 + cosb1_ind*2240 + g2_ind*224 + cosb2_ind*16 + a_ind
+	return ind
+
+cdef double interpolator(double[:] masses_1, double[:] carts_1, double[:] masses_2, double[:] carts_2) except *:
+	cdef:
+		int r_ind, a_ind, cosb1_ind, g1_ind, cosb2_ind, g2_ind
+		double r
+		#double [:] ints_vw = ints
+		#double ints_1[3], ints_2[3]
+		double com_1[3], com_2[3]
+		double [:] com_1_vw = com_1
+		double [:] com_2_vw = com_2
+	ints_1 = np.zeros(3)
+	ints_2 = np.zeros(3)
+
+	centre_of_mass(masses_1, carts_1, com_1_vw)
+	centre_of_mass(masses_2, carts_2, com_2_vw)
+	r = length(com_1_vw, com_2_vw)
+	cart_int(masses_1, carts_1, ints_1)
+	cart_int(masses_2, carts_2, ints_2)
+
+	r_ind = r_index(r)
+	g1_ind = g_index(ints_1[2])
+	cosb1_ind = cosb_index(ints_1[1])
+	g2_ind = g_index(ints_2[2])
+	cosb2_ind = cosb_index(ints_2[1])
+	a_ind = a_index(ints_2[0] - ints_1[0])
+
+	pot_ind = pot_index(r_ind, g1_ind, cosb1_ind, g2_ind, cosb2_ind, a_ind)
+
+
+
+	print "CoM of Body 1: [", com_1[0], ",", com_1[1], ",", com_1[2], "]"
+	print "CoM of Body 2: [", com_2[0], ",", com_2[1], ",", com_2[2], "]"
+	print com_2[0]
+	#print r, ints_1[2], ints_1[1], ints_2[2], ints_2[1], ints_2[0] - ints_1[0]
+	print r, ints_1[0], ints_1[1], ints_1[2], ints_2[0], ints_2[1], ints_2[2]
+	return 1.0
+
+########### Test for interpolator ###########
+t_ints_1 = np.zeros(3)
+t_ints_2 = np.zeros(3)
+t_masses_1 = np.array([14.0, 1.0, 1.0, 1.0]) 
+t_masses_2 = np.array([14.0, 1.0, 1.0, 1.0])
+t_carts_1 = np.array([0.0, 0.066352583, 0.0, -0.9398158760, -0.307353191, 0.0, 0.4699079380, -0.307353191, -0.8139044235, 0.4699079380, -0.307353191, 0.8139044235]) # (a,b,g) = (pi/2, pi/2, pi/2)
+t_carts_2 = np.array([0.0, 0.066352583, 5.0, 0.9398158760, -0.307353191, 5.0, -0.4699079380, -0.307353191, 5.8139044235, -0.4699079380, -0.307353191, 4.1860955765]) # (a,b,g) = (pi/2, pi/2, -pi/2)
+t_carts_3 = np.array([0.0, 0.066352583, 0.0, 0.6645501788, -0.307353191, 0.6645501788, -0.9077924264, -0.307353191, 0.2432422476, 0.2432422476, -0.307353191, -0.9077924264]) # (a,b,g) = (pi/2, pi/2, -3pi/4)
+t_carts_4 = np.array([0.0, -0.04691836138, -0.04691836138, 0.6645501788, 0.6872394635, -0.2525764125, -0.9077924264, 0.3893297683, 0.0453332827, 0.2432422476, -0.4245746553, 0.8592377063]) # (a,b,g) = (pi/2, -3pi/4, -3pi/4)
+t_carts_98 = np.array([10.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0])
+t_carts_99 = np.array([10.0, 2.0, 8.0, 4.0, 5.0, 11.0, 7.0, 8.0, 14.0, 10.0, 11.0, 17.0])
+
+cart_int(t_masses_1, t_carts_1, t_ints_1)
+interpolator(t_masses_1, t_carts_4, t_masses_2, t_carts_2)
+
+
+
+
+		
 	## Need to use centre_of_mass to find R (z value of com)
 	## subtract R from z direction values (n*3+2 index)
 	## recentre monomer 2 and find internal angles
 	## interpolate from data characteristics
 
-	a = carts[:3] + carts[4:7]
-	for i in a: print i
+	# a = carts[:3] + carts[4:7]
+	# for i in a: print i
 	# cart_int(carts, ints, m_N, m_H)
 
 
 
-testints = np.zeros(3)
-cdef double [:] testcarts_vw = np.array([10.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0])
-cdef double [:] testints_vw = testints
-cart_int(testcarts_vw, testints_vw, 20.0, 50.0)
-interpolator(testcarts_vw, 20.0, 50.0)
-print testints
 
 
-
-
-
-###########Test for centre_of_mass###########
+########### Test for centre_of_mass ###########
 # cdef enum: t_atom2 = 4
 # cdef double mat[t_atom2]
 # cdef:
@@ -412,7 +524,7 @@ print testints
 # print t_com_vw[0], t_com_vw[1], t_com_vw[2]
 
 
-###########Test for int_cart###########
+########### Test for int_cart ###########
 # cdef double [:] t_ref = np.array([0.000000000000000, 0.000000000000000, 0.066352583])
 # cdef double [:] t_com = np.array([0.0, 0.0, 10.0])
 # cdef double t_cart[3]
